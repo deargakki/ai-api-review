@@ -4,13 +4,13 @@
 
 本文档是 API Contract Review 系统的核心流程文档。各专项模块的详细实现请参考以下文档：
 
-| 文档 | 说明 |
-|------|------|
-| [CONFLUENCE-INTEGRATION.md](./CONFLUENCE-INTEGRATION.md) | Confluence 集成与数据解析方案 |
-| [OPENAPI-GENERATION.md](./OPENAPI-GENERATION.md) | OpenAPI 生成方案（Agent + Prompt） |
-| [OPENAPI-COMPARISON.md](./OPENAPI-COMPARISON.md) | OpenAPI 对比方案（Agent + Prompt） |
-| [CAGE-SCAN-INTEGRATION.md](./CAGE-SCAN-INTEGRATION.md) | Cage Scan 集成方案 |
-| [SPECTRAL-INTEGRATION.md](./SPECTRAL-INTEGRATION.md) | Spectral 集成方案（支持服务化部署） |
+| 文档                                                       | 说明                           |
+| -------------------------------------------------------- | ---------------------------- |
+| [CONFLUENCE-INTEGRATION.md](./CONFLUENCE-INTEGRATION.md) | Confluence 集成与数据解析方案         |
+| [OPENAPI-GENERATION.md](./OPENAPI-GENERATION.md)         | OpenAPI 生成方案（Agent + Prompt） |
+| [OPENAPI-COMPARISON.md](./OPENAPI-COMPARISON.md)         | OpenAPI 对比方案（Agent + Prompt） |
+| [CAGE-SCAN-INTEGRATION.md](./CAGE-SCAN-INTEGRATION.md)   | Cage Scan 集成方案               |
+| [SPECTRAL-INTEGRATION.md](./SPECTRAL-INTEGRATION.md)     | Spectral 集成方案（支持服务化部署）       |
 
 ## 1. 场景描述
 
@@ -25,8 +25,8 @@ Governance Team 负责 API 变更的审批和合规性检查。当用户更新 C
 3. 获取 GitHub master 分支的 OpenAPI 规范
 4. 对比两个 OpenAPI 文件，识别差异
 5. 识别 Breaking Changes
-6. 运行 Cage Scan
-7. 运行 Spectral 扫描
+6. 运行 Spectral 扫描（优先）
+7. 运行 Cage Scan（后续集成）
 8. 生成详细的差异报告（包含所有检查结果）
 9. 通过 Web UI 展示报告
 
@@ -421,6 +421,7 @@ components:
 3. 生成违规列表
 
 **集成方式**: 支持多种方式
+
 - **方式 0（推荐）**: 部署为 HTTP 服务，通过 API 调用
 - **方式 1**: 本地命令行调用
 - **方式 2**: 使用 Python 库
@@ -738,11 +739,11 @@ components:
 | 组件             | 技术                      | 说明                  |
 | -------------- | ----------------------- | ------------------- |
 | Web 框架         | Flask                   | 轻量级 Web 框架          |
-| Agent 框架       | LangChain               | LLM Agent 框架        |
-| LLM            | GPT-4                   | 生成 OpenAPI 和报告      |
+| LLM API        | OpenAI API              | 生成 OpenAPI 和报告      |
 | Confluence API | atlassian-python-api    | 读取 Confluence 页面    |
 | GitHub API     | PyGithub                | 获取 GitHub 文件        |
-| Spectral CLI   | @stoplight/spectral-cli | API 规范检查（Cage Scan） |
+| Spectral       | @stoplight/spectral-cli | API 规范检查（支持服务化部署） |
+| 服务框架         | FastAPI                 | Spectral 服务化部署      |
 | 配置管理           | python-dotenv           | 环境变量管理              |
 
 ***
@@ -881,14 +882,14 @@ components:
 
 ### 7.1 环境变量
 
-| 变量名                           | 说明                                         | 示例                                  |
-| ----------------------------- | ------------------------------------------ | ----------------------------------- |
-| `CONFLUENCE_URL`              | Confluence URL                             | `https://xxx.atlassian.net`         |
-| `CONFLUENCE_TOKEN`            | Confluence API Token                       | `xxx`                               |
-| `CONFLUENCE_STANDARD_PAGE_ID` | Confluence Governance Standard 页面 ID（固定配置） | `987654321`                         |
-| `GITHUB_TOKEN`                | GitHub API Token                           | `ghp_xxx`                           |
-| `GITHUB_REPO`                 | GitHub 仓库名称                                | `owner/repo`                        |
-| `OPENAI_API_KEY`              | OpenAI API Key                             | `sk-xxx`                            |
+| 变量名                           | 说明                                         | 示例                          |
+| ----------------------------- | ------------------------------------------ | --------------------------- |
+| `CONFLUENCE_URL`              | Confluence URL                             | `https://xxx.atlassian.net` |
+| `CONFLUENCE_TOKEN`            | Confluence API Token                       | `xxx`                       |
+| `CONFLUENCE_STANDARD_PAGE_ID` | Confluence Governance Standard 页面 ID（固定配置） | `987654321`                 |
+| `GITHUB_TOKEN`                | GitHub API Token                           | `ghp_xxx`                   |
+| `GITHUB_REPO`                 | GitHub 仓库名称                                | `owner/repo`                |
+| `OPENAI_API_KEY`              | OpenAI API Key                             | `sk-xxx`                    |
 
 ### 8.2 配置文件
 
@@ -917,20 +918,20 @@ smtp:
     - "lead@company.com"
 ```
 
----
+***
 
 ## 8. 错误处理
 
 ### 8.1 常见错误
 
-| 错误类型 | 原因 | 处理方式 |
-|---------|------|---------|
-| Confluence 页面不存在 | 页面 ID 错误 | 提示用户检查页面 ID |
-| Confluence 权限不足 | Token 无权限 | 提示用户检查 Token 权限 |
-| GitHub 仓库不存在 | 仓库名称错误 | 提示用户检查仓库名称 |
-| GitHub 权限不足 | Token 无权限 | 提示用户检查 Token 权限 |
-| LLM 生成失败 | API 调用失败 | 提示用户检查 API Key |
-| OpenAPI 格式错误 | 生成内容不正确 | 提示用户检查 Confluence 内容 |
+| 错误类型             | 原因        | 处理方式                 |
+| ---------------- | --------- | -------------------- |
+| Confluence 页面不存在 | 页面 ID 错误  | 提示用户检查页面 ID          |
+| Confluence 权限不足  | Token 无权限 | 提示用户检查 Token 权限      |
+| GitHub 仓库不存在     | 仓库名称错误    | 提示用户检查仓库名称           |
+| GitHub 权限不足      | Token 无权限 | 提示用户检查 Token 权限      |
+| LLM 生成失败         | API 调用失败  | 提示用户检查 API Key       |
+| OpenAPI 格式错误     | 生成内容不正确   | 提示用户检查 Confluence 内容 |
 
 ### 8.2 错误处理策略
 
@@ -939,23 +940,23 @@ smtp:
 3. **重试机制**: 网络错误自动重试
 4. **日志记录**: 记录所有错误信息
 
----
+***
 
 ## 9. 性能优化
 
 ### 9.1 执行时间估算
 
-| 步骤 | 时间 |
-|------|------|
-| 读取 Confluence 页面 | 1-2 秒 |
-| 生成 OpenAPI | 10-30 秒 |
-| 获取 GitHub OpenAPI | 1-2 秒 |
-| 对比 OpenAPI | 1-2 秒 |
-| 识别 Breaking Changes | 1-2 秒 |
-| 运行 Cage Scan | 5-10 秒 |
-| 运行 Spectral 扫描 | 1-2 秒 |
-| 生成报告 | 10-30 秒 |
-| **总计** | **30-80 秒** |
+| 步骤                  | 时间          |
+| ------------------- | ----------- |
+| 读取 Confluence 页面    | 1-2 秒       |
+| 生成 OpenAPI          | 10-30 秒     |
+| 获取 GitHub OpenAPI   | 1-2 秒       |
+| 对比 OpenAPI          | 1-2 秒       |
+| 识别 Breaking Changes | 1-2 秒       |
+| 运行 Cage Scan        | 5-10 秒      |
+| 运行 Spectral 扫描      | 1-2 秒       |
+| 生成报告                | 10-30 秒     |
+| **总计**              | **30-80 秒** |
 
 ### 9.2 优化建议
 
@@ -964,7 +965,7 @@ smtp:
 3. **增量更新**: 只检查变更的部分
 4. **异步处理**: 使用异步 API 调用
 
----
+***
 
 ## 10. 安全考虑
 
@@ -986,7 +987,7 @@ smtp:
 - 记录访问日志
 - 记录错误日志
 
----
+***
 
 ## 11. 扩展性
 
@@ -1008,7 +1009,7 @@ smtp:
 - HTML
 - JSON
 
----
+***
 
 ## 12. 总结
 
@@ -1034,7 +1035,7 @@ smtp:
 3. 测试和调试
 4. 部署和上线
 
----
+***
 
 ## 13. 实现状态
 
@@ -1045,18 +1046,20 @@ smtp:
 **详细实现参考**: [CONFLUENCE-INTEGRATION.md](./CONFLUENCE-INTEGRATION.md)
 
 **核心方案**:
+
 1. **HTML 解析方法**: 使用 BeautifulSoup 解析 HTML 结构
 2. **LLM 提取方法**: 使用 GPT-4 解析复杂内容
 3. **集成方法**: 结合 HTML 解析和 LLM 理解，交叉验证
 
 **提取内容**:
+
 - API 基本信息（标题、描述、版本）
 - 端点信息（HTTP 方法、路径、参数）
 - 请求信息（请求头、请求体、示例）
 - 响应信息（状态码、响应体、示例）
 - 安全信息（认证方式、权限要求）
 
----
+***
 
 ### 13.2 OpenAPI 对比优化
 
@@ -1067,18 +1070,20 @@ smtp:
 **核心方案**: 使用 Agent + Prompt 进行语义化对比
 
 **关键要点**:
+
 1. **语义理解**：使用 LLM 理解 API 语义，而非简单的文本对比
 2. **核心契约对比**：关注 path、method、parameters、request/response body 等核心信息
 3. **智能识别 Breaking Changes**：通过精心设计的 Prompt 自动识别 Breaking Changes
 4. **忽略非关键差异**：自动忽略 description、example、格式等差异
 
 **实现方式**:
+
 - 使用 GPT-4 作为对比 Agent
 - 通过精心设计的 Prompt 指导对比逻辑
 - 提供 Few-Shot Learning 示例提高准确性
 - 输出标准化的 JSON 格式结果
 
----
+***
 
 ### 13.3 OpenAPI 生成优化
 
@@ -1089,12 +1094,13 @@ smtp:
 **核心方案**: 使用 Agent + Prompt 从 Confluence 内容生成 OpenAPI
 
 **关键要点**:
+
 1. **Prompt 工程**：设计高质量的 Prompt 模板
 2. **Few-Shot Learning**：提供示例提高生成质量
 3. **输出验证**：验证生成的 OpenAPI 规范
 4. **错误处理**：处理生成失败的情况
 
----
+***
 
 ### 13.4 Cage Scan 集成
 
@@ -1105,11 +1111,12 @@ smtp:
 **核心方案**: 通过 HTTP API 调用公司提供的 Cage Scan 服务
 
 **集成方式**:
+
 - **方式 1（推荐）**: HTTP API 调用
 - **方式 2**: 命令行工具调用
 - **方式 3**: Web 界面自动化（不推荐）
 
----
+***
 
 ### 13.5 Spectral 集成
 
@@ -1120,67 +1127,179 @@ smtp:
 **核心方案**: 支持多种集成方式，推荐服务化部署
 
 **集成方式**:
+
 - **方式 0（推荐）**: 部署为 HTTP 服务，通过 API 调用
 - **方式 1**: 本地命令行调用
 - **方式 2**: 使用 Python 库
 - **方式 3**: 使用 Docker
 
 **服务化部署优势**:
+
 - 集中管理 Spectral 版本和配置
 - 无需在每个客户端安装 Spectral
 - 便于监控和日志收集
 - 支持并发请求
 - 易于扩展和维护
 
----
+***
 
-## 14. 文档索引
+## 14. 项目开发计划
 
-### 14.1 核心文档
+### 14.1 技术架构
 
-| 文档 | 说明 | 状态 |
-|------|------|------|
-| [API-CONTRACT-REVIEW-FLOW.md](./API-CONTRACT-REVIEW-FLOW.md) | 核心流程文档（本文档） | ✅ 已更新 |
-| [CONFLUENCE-INTEGRATION.md](./CONFLUENCE-INTEGRATION.md) | Confluence 集成方案 | ✅ 已完成 |
-| [OPENAPI-GENERATION.md](./OPENAPI-GENERATION.md) | OpenAPI 生成方案 | ✅ 已完成 |
-| [OPENAPI-COMPARISON.md](./OPENAPI-COMPARISON.md) | OpenAPI 对比方案 | ✅ 已完成 |
-| [CAGE-SCAN-INTEGRATION.md](./CAGE-SCAN-INTEGRATION.md) | Cage Scan 集成方案 | ✅ 已完成 |
-| [SPECTRAL-INTEGRATION.md](./SPECTRAL-INTEGRATION.md) | Spectral 集成方案 | ✅ 已完成 |
+**核心技术栈**：
+- Web 框架: Flask
+- LLM API: OpenAI API
+- Confluence API: atlassian-python-api
+- GitHub API: PyGithub
+- Spectral: @stoplight/spectral-cli
+- 服务框架: FastAPI (Spectral 服务)
+- 配置管理: python-dotenv
 
-### 14.2 实现优先级
+**系统架构**：
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   Web UI    │────>│  核心服务   │────>│  报告生成   │
+└─────────────┘     └─────────────┘     └─────────────┘
+         │                 │                 ▲
+         │                 ▼                 │
+         │         ┌─────────────┐         │
+         └────────>│  Spectral  │─────────┘
+                   │   服务     │
+                   └─────────────┘
+```
+
+### 14.2 开发阶段
+
+#### 阶段 1: 基础架构搭建（1 周）
+- **任务 1.1**: 搭建开发环境
+  - 创建虚拟环境
+  - 安装依赖包
+  - 配置环境变量
+
+- **任务 1.2**: 实现 Confluence 客户端
+  - 集成 atlassian-python-api
+  - 实现页面内容读取功能
+  - 测试 API 调用
+
+- **任务 1.3**: 部署 Spectral 服务
+  - 实现 FastAPI 服务
+  - 配置 Docker 部署
+  - 测试服务可用性
+
+#### 阶段 2: 核心功能实现（2 周）
+- **任务 2.1**: OpenAPI 生成模块
+  - 设计 Prompt 模板
+  - 实现 OpenAI API 调用
+  - 添加输出验证
+
+- **任务 2.2**: OpenAPI 对比模块
+  - 实现 GitHub API 集成
+  - 设计对比 Prompt
+  - 实现差异分析
+
+- **任务 2.3**: Spectral 集成
+  - 实现服务调用
+  - 处理扫描结果
+  - 集成到流程中
+
+#### 阶段 3: Web UI 和报告（2 周）
+- **任务 3.1**: Web UI 开发
+  - 实现输入页面
+  - 设计结果展示
+  - 添加实时进度
+
+- **任务 3.2**: 报告生成
+  - 设计报告模板
+  - 实现数据汇总
+  - 添加可视化图表
+
+- **任务 3.3**: 测试和优化
+  - 端到端测试
+  - 性能优化
+  - 错误处理
+
+#### 阶段 4: 部署和集成（1 周）
+- **任务 4.1**: 部署到测试环境
+  - 配置 CI/CD
+  - 自动化测试
+  - 监控设置
+
+- **任务 4.2**: Cage Scan 集成（可选）
+  - 集成公司 Cage Scan 服务
+  - 测试 API 调用
+  - 结果处理
+
+- **任务 4.3**: 文档和培训
+  - 更新技术文档
+  - 编写用户指南
+  - 内部培训
+
+### 14.3 关键里程碑
+
+| 里程碑 | 时间 | 完成标准 |
+|--------|------|----------|
+| 基础架构完成 | 第 1 周末 | Confluence 客户端和 Spectral 服务部署完成 |
+| 核心功能完成 | 第 3 周末 | OpenAPI 生成和对比功能测试通过 |
+| Web UI 完成 | 第 5 周末 | 完整的 Web 界面和报告功能 |
+| 测试环境部署 | 第 6 周末 | 系统在测试环境稳定运行 |
+| 生产环境部署 | 第 8 周末 | 系统正式上线 |
+
+### 14.4 风险评估
+
+| 风险 | 影响 | 缓解措施 |
+|------|------|----------|
+| Confluence API 访问限制 | 中 | 实现重试机制和缓存 |
+| OpenAI API 成本 | 中 | 设置使用限制和监控 |
+| 扫描性能 | 低 | 优化并行处理和异步操作 |
+| 公司环境集成 | 中 | 预留集成时间和测试 |
+
+## 15. 文档索引
+
+### 15.1 核心文档
+
+| 文档                                                           | 说明              | 状态    |
+| ------------------------------------------------------------ | --------------- | ----- |
+| [API-CONTRACT-REVIEW-FLOW.md](./API-CONTRACT-REVIEW-FLOW.md) | 核心流程文档（本文档）     | ✅ 已更新 |
+| [CONFLUENCE-INTEGRATION.md](./CONFLUENCE-INTEGRATION.md)     | Confluence 集成方案 | ✅ 已完成 |
+| [OPENAPI-GENERATION.md](./OPENAPI-GENERATION.md)             | OpenAPI 生成方案    | ✅ 已完成 |
+| [OPENAPI-COMPARISON.md](./OPENAPI-COMPARISON.md)             | OpenAPI 对比方案    | ✅ 已完成 |
+| [CAGE-SCAN-INTEGRATION.md](./CAGE-SCAN-INTEGRATION.md)       | Cage Scan 集成方案  | ✅ 已完成 |
+| [SPECTRAL-INTEGRATION.md](./SPECTRAL-INTEGRATION.md)         | Spectral 集成方案   | ✅ 已完成 |
+
+### 15.2 实现优先级
 
 1. **高优先级**
    - Confluence 集成
    - OpenAPI 生成
    - OpenAPI 对比
-
+   - Spectral 集成（优先）
 2. **中优先级**
-   - Cage Scan 集成
-   - Spectral 集成
-
-3. **低优先级**
-   - Web UI 优化
+   - Web UI 开发
    - 报告模板定制
+3. **低优先级**
+   - Cage Scan 集成（后续）
+   - 监控和日志
 
-### 14.3 下一步行动
+### 15.3 下一步行动
 
 1. **立即开始**
    - 搭建开发环境
    - 实现 Confluence 客户端
-   - 实现 OpenAPI 生成 Agent
-
+   - 实现 OpenAPI 生成模块（使用 OpenAI API + Prompt）
+   - 部署 Spectral 服务
 2. **短期目标（1-2 周）**
    - 完成 Confluence 集成
    - 完成 OpenAPI 生成和对比
-   - 集成 Cage Scan
-
+   - 集成 Spectral 扫描
+   - 开发基础 Web UI
 3. **中期目标（3-4 周）**
-   - 集成 Spectral
-   - 开发 Web UI
-   - 测试和优化
-
+   - 完善 Web UI
+   - 优化报告模板
+   - 测试和性能优化
 4. **长期目标（1-2 月）**
+   - 集成 Cage Scan（公司环境）
    - 部署到生产环境
-   - 监控和日志
+   - 监控和日志系统
    - 用户培训
 
