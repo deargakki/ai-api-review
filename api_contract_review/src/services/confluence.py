@@ -1,9 +1,6 @@
 from atlassian import Confluence
-import os
-from dotenv import load_dotenv
+from ..config.config import config
 from bs4 import BeautifulSoup
-
-load_dotenv()
 
 def html_to_text_with_tables_and_code(html_content):
     """将 HTML 转换为纯文本，保留表格结构和代码块"""
@@ -75,9 +72,9 @@ def html_to_text_with_tables_and_code(html_content):
 class ConfluenceService:
     def __init__(self):
         self.confluence = Confluence(
-            url=os.getenv('CONFLUENCE_URL'),
-            username=os.getenv('CONFLUENCE_USERNAME'),
-            password=os.getenv('CONFLUENCE_API_TOKEN')
+            url=config.CONFLUENCE_URL,
+            username=config.CONFLUENCE_USERNAME,
+            password=config.CONFLUENCE_API_TOKEN
         )
 
     def get_page_content(self, page_id):

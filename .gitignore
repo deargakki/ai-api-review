@@ -38,3 +38,11 @@ logs
 # Temporary files
 *.tmp
 *.temp
+
+# Spring Boot project
+springboot-api/
+
+# Test files
+test_confluence_api.py
+confluence_content.html
+api.yaml
